@@ -138,11 +138,18 @@ open class {{classname}} {
             {{/hasFormParams}}
         {{/bodyParam}}{{#hasQueryParams}}
         var url = URLComponents(string: URLString)
-        url?.queryItems = APIHelper.mapValuesToQueryItems([
-            {{#queryParams}}
-            {{> _param}}{{#hasMore}}, {{/hasMore}}
-            {{/queryParams}}
-        ]){{/hasQueryParams}}{{^hasQueryParams}}
+        url?.queryItems = []
+        {{#queryParams}}if "{{#collectionFormat}}{{collectionFormat}}{{/collectionFormat}}" == "" {
+            let value: Any? = {{paramName}}{{^isEnum}}{{#isInteger}}{{^required}}?{{/required}}.encodeToJSON(){{/isInteger}}{{#isLong}}{{^required}}?{{/required}}.encodeToJSON(){{/isLong}}{{/isEnum}}{{#isEnum}}{{^isContainer}}{{^required}}?{{/required}}.rawValue{{/isContainer}}{{/isEnum}}{{#isDate}}{{^required}}?{{/required}}.encodeToJSON(){{/isDate}}{{#isDateTime}}{{^required}}?{{/required}}.encodeToJSON(){{/isDateTime}}
+            if let value = value {
+                url?.queryItems?.append(URLQueryItem(name: "{{baseName}}", value: "\(value)"))
+            }
+        } else if let queryItems = APIHelper.mapValueToQueryItems("{{#collectionFormat}}{{collectionFormat}}{{/collectionFormat}}", "{{baseName}}", {{paramName}}), queryItems.count > 0 {
+            url?.queryItems?.append(contentsOf: queryItems)
+        }
+        {{/queryParams}}if url?.queryItems?.count == 0 {
+            url?.queryItems = nil
+        }{{/hasQueryParams}}{{^hasQueryParams}}
         let url = URLComponents(string: URLString){{/hasQueryParams}}{{#headerParams}}{{^secondaryParam}}
         let nillableHeaders: [String: Any?] = [{{/secondaryParam}}
             {{> _param}}{{#hasMore}},{{/hasMore}}{{^hasMore}}
